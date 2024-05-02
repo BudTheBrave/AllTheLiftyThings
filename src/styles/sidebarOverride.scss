@@ -1,0 +1,16 @@
+$primary-color: #00897b;
+$base-bg: #282828;
+
+$item-color: #00897b;
+
+$item-active-line-color: $primary-color;
+
+$item-open-color: #f1f1f1;
+$item-open-bg: $primary-color;
+
+$header-item-color: rgba($item-color, 0.9);
+
+$toggle-btn-color: #fff;
+$toggle-btn-bg: darken($base-bg, 5%);
+
+@import 'vue-sidebar-menu/src/scss/vue-sidebar-menu.scss'
