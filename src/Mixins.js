@@ -82,7 +82,7 @@ async function convertVideosToMP4(videos) {
             
 
             // Execute FFmpeg command to convert the video to MP4
-            await ffmpeg.exec(['-i', 'input', '-c:v', 'copy', 'output.mp4']);
+            await ffmpeg.exec(['-i', 'input', 'output.mp4']);
             
             // Read the converted MP4 file
             const data = await ffmpeg.readFile('output.mp4');

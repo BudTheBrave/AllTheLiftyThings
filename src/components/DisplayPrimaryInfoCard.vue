@@ -22,12 +22,12 @@
 
                 <div class="previewMediaContainer">
                     <div v-if="mediaIcon.type.match('video/*')">
-                        <video class="mediaVideoDisplay" >
+                        <video class="mediaVideoDisplay" muted>
                             <source 
                               :src="mediaIcon.src" 
                               :type="mediaIcon.type" 
                             />
-                            
+                            Not Supported
                         </video>
                     </div>
                     <div v-else>
