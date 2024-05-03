@@ -131,6 +131,8 @@ function emitData() {
     emit('pushFiles', files.value)
     emit('pushExistingMedia', existingMedia.value)
 }
+
+
 </script>
 
 <template>
@@ -140,7 +142,9 @@ function emitData() {
             <div class="file-container">
                 <div class="file-image">
                     <div v-if="file.type.match('video/*')">
-                        <video :src="getFileSrc(file)" class="previewImg"></video>
+                        <video  class="previewImg" muted>
+                            <source :src="getFileSrc(file)">
+                        </video>
                     </div>
                     <img v-else :src="getFileSrc(file)" alt="preview file" class="previewImg" />
                 </div>
@@ -173,7 +177,10 @@ function emitData() {
             <div class="file-container">
                 <div class="file-image">
                     <div v-if="mediaData.type.match('video/*')">
-                        <video :src="mediaData.mediaURL" style="max-width: 50px"></video>
+                        <video  style="max-width: 50px" muted>
+                            <source :src="mediaData.mediaURL" type="video/mp4">
+                            Type not supported
+                        </video>
                     </div>
                     <img v-else  :src="mediaData.mediaURL" style="max-width: 50px"/> 
                 </div>
