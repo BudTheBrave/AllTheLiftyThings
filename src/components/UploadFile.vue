@@ -3,6 +3,7 @@
 import { ref, defineEmits, defineExpose } from "vue"
 import { capitalizeFirstLetters } from "@/Mixins";
 import BaseInput from "../components/BaseInput.vue"
+import { video } from "fontawesome";
 
 const files = ref([]);
 const demonstratorsRef = ref({});
@@ -10,6 +11,8 @@ const demonstrators = ref({})
 
 const existingMedia = ref([]);
 const existingDemonstratorsRef = ref({})
+
+const posterImage = ref({});
 
 
 /** index == file position
@@ -27,8 +30,17 @@ function addTofileArray(e) {
     if(!e.target.files){
         return;
     }
-    Array.from(e.target.files).forEach(file => {
+    let index = -1;
+    Array.from(e.target.files).forEach(async (file) => {
+        index++;
         if(!files.value.find(e => e.name === file.name)){
+            if(file.type.match('video/*')){
+                const posterURL = await generatePosterImage(file)
+                console.log(posterURL)
+                posterImage.value['video_' + index] = posterURL
+                console.log("AFTER SET")
+
+            }
             files.value.push(file);
         } else {
             console.log("file already submitted")
@@ -132,19 +144,69 @@ function emitData() {
     emit('pushExistingMedia', existingMedia.value)
 }
 
+const testSrc = ref('')
+
+async function generatePosterImage(e) {
+    console.log("CALLED IN FILE THINGY", e)
+    return await new Promise((res, rej) => {
+        const file = e;
+        console.log("FILE", file)
+        const videoEle = document.createElement("video");
+        videoEle.src = URL.createObjectURL(file);
+
+        console.log(videoEle.src, "VIDEO URL")
+        videoEle.onloadedmetadata = () => {
+            new Promise(() => setTimeout(async () => {
+
+                // }
+                // videoEle.addEventListener('loadedmetadata', async () => {
+                    console.log("DATA LOADED")
+                    const canvasEle = document.createElement('canvas');
+                    const context = canvasEle.getContext('2d');
+                    
+                    console.log(videoEle.videoHeight, videoEle.videoWidth, "HEIGHT N WIDTH")
+                    canvasEle.width = videoEle.videoWidth;
+                    canvasEle.height = videoEle.videoHeight;
+                    
+                    context.drawImage(videoEle, 0, 0, canvasEle.width, canvasEle.height);
+                    
+                    
+                    console.log(canvasEle.toDataURL(), "CANVAS DATA URL");
+                    
+                    // Convert canvas to data URL and set as poster image
+                    const posterImageReturn = await canvasEle.toDataURL();
+                    testSrc.value = posterImageReturn
+                    // Clean up
+                    // URL.revokeObjectURL(videoEle.src)
+                    
+                    res(posterImageReturn);
+                    
+                }, 5000));
+            }
+
+        videoEle.addEventListener('error', (error) => {
+            console.log("ERROR", error)
+            rej(error)
+        })
+
+        document.body.appendChild(videoEle);
+    });
+}
+
 
 </script>
 
 <template>
-    
+    <div v-if="testSrc">
+        <img :src='testSrc' >
+    </div>
+
     <div v-if="files.value != []" class="file-list-container">
         <div v-for="(file, fileIndex) in files" :key="file" >
             <div class="file-container">
                 <div class="file-image">
                     <div v-if="file.type.match('video/*')">
-                        <video  class="previewImg" muted>
-                            <source :src="getFileSrc(file)">
-                        </video>
+                        <img  :src="posterImage['video_'+fileIndex]" alt="Poster Image" style="max-width: 50px">
                     </div>
                     <img v-else :src="getFileSrc(file)" alt="preview file" class="previewImg" />
                 </div>
@@ -177,10 +239,9 @@ function emitData() {
             <div class="file-container">
                 <div class="file-image">
                     <div v-if="mediaData.type.match('video/*')">
-                        <video  style="max-width: 50px" muted>
-                            <source :src="mediaData.mediaURL" type="video/mp4">
-                            Type not supported
-                        </video>
+                        <video ref="video" style="display: none;"></video>
+                        <canvas ref="canvas"></canvas>
+                        <img v-if="posterImage" :src="posterImage" alt="Poster Image" style="max-width: 50px">
                     </div>
                     <img v-else  :src="mediaData.mediaURL" style="max-width: 50px"/> 
                 </div>
