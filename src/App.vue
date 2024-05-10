@@ -3,7 +3,7 @@
     <sidebar-menu 
     :menu="menu" 
     :rtl="true"
-    :hideToggle="false"
+    :hideToggle="true"
     :width="'250px'"
     :collapsed="toggleCollapse"
     @update:collapsed="onToggleCollapse"
