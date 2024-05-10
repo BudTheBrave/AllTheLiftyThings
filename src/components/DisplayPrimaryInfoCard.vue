@@ -22,16 +22,10 @@
 
                 <div class="previewMediaContainer">
                     <div v-if="mediaIcon.type.match('video/*')">
-                        <video class="mediaVideoDisplay" muted>
-                            <source 
-                              :src="mediaIcon.src" 
-                              :type="mediaIcon.type" 
-                            />
-                            Not Supported
-                        </video>
+                        <img :src="mediaIcon.posterURL" alt="video poster" class="mediaVideoDisplay">
                     </div>
                     <div v-else>
-                        <img :src="mediaIcon.src" class="mediaImageDisplay"/>
+                        <img :src="mediaIcon.src" class="mediaImageDisplay" alt="stunt photo"/>
                     </div>
                 </div>
             </div>
@@ -98,17 +92,11 @@ function getMediaIcon() {
             }
             for(let i = 0; i < media.length; i++){
                 if(media[i].type.match('video/*')){
-                    if(media[i].type == "video/mp4" || media[i].type == "video/webm") {
                         return {
                             type: media[i].type,
-                            src: media[i].mediaURL
+                            src: media[i].mediaURL,
+                            posterURL: media[i].posterURL
                         }
-                    } else {
-                        return {
-                            type: "video/mp4",
-                            src: media[i].mediaURL
-                        }
-                    }
                 } else if(media[i].type.match('image/*')){
                     return {
                         type: media[i].type,

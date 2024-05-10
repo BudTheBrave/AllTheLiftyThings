@@ -1,9 +1,8 @@
 <script setup>
 //import { uploadNewStuntToBucket } from "../firebase/storageOperations.js"
-import { ref, defineEmits, defineExpose } from "vue"
+import { ref, defineEmits, defineExpose, toRaw } from "vue"
 import { capitalizeFirstLetters } from "@/Mixins";
 import BaseInput from "../components/BaseInput.vue"
-import { video } from "fontawesome";
 
 const files = ref([]);
 const demonstratorsRef = ref({});
@@ -23,30 +22,34 @@ const posterImage = ref({});
  * ]
  */
 
-defineExpose({clearFiles, clearAllDemonstrators, clearAll, presetMedia});
-const emit = defineEmits(['pushFiles', 'pushDemonstrators', 'pushExistingMedia'])
+defineExpose({clearFiles, clearAllDemonstrators, clearAll, presetMedia, clearPosterImages});
+const emit = defineEmits(['pushFiles', 'pushDemonstrators', 'pushExistingMedia', 'pushPosterImage'])
 
 function addTofileArray(e) {
     if(!e.target.files){
         return;
     }
-    let index = -1;
     Array.from(e.target.files).forEach(async (file) => {
-        index++;
         if(!files.value.find(e => e.name === file.name)){
             if(file.type.match('video/*')){
                 const posterURL = await generatePosterImage(file)
-                console.log(posterURL)
-                posterImage.value['video_' + index] = posterURL
-                console.log("AFTER SET")
+                console.log("E NAME", file.name, posterURL)
+                posterImage.value['video_' + getJustFileName(file.name)] = posterURL
+                console.log("AFTER SET", posterImage.value)
 
             }
+            console.log(file)
             files.value.push(file);
+            console.log("EMITING DATA")
+            emitData()
         } else {
             console.log("file already submitted")
         }        
     })
-    emitData()
+}
+
+function getJustFileName(filename){
+    return filename.slice(0, filename.lastIndexOf('.'));
 }
 
 function removeEntry(array, index) {
@@ -64,6 +67,7 @@ function clearAll(){
     files.value = []
     demonstrators.value = {}
     existingMedia.value = {}
+    posterImage.value = {}
 }
 
 function clearFiles() {
@@ -73,6 +77,10 @@ function clearFiles() {
 function clearAllDemonstrators(){
     demonstrators.value = {}
 
+}
+
+function clearPosterImages() {
+    posterImage.value = {}
 }
 
 function clearDemonstratorField(fullIndex){
@@ -142,71 +150,88 @@ function emitData() {
     emit('pushDemonstrators', demonstrators.value)
     emit('pushFiles', files.value)
     emit('pushExistingMedia', existingMedia.value)
+    console.log("EMMITING", toRaw(posterImage.value))
+    emit('pushPosterImage', toRaw(posterImage.value))
 }
 
-const testSrc = ref('')
+
+const videoRef = ref(null)
+const videoEle = ref(null)
+const canvasEle = ref(null)
 
 async function generatePosterImage(e) {
     console.log("CALLED IN FILE THINGY", e)
     return await new Promise((res, rej) => {
         const file = e;
         console.log("FILE", file)
-        const videoEle = document.createElement("video");
-        videoEle.src = URL.createObjectURL(file);
-
-        console.log(videoEle.src, "VIDEO URL")
-        videoEle.onloadedmetadata = () => {
-            new Promise(() => setTimeout(async () => {
-
-                // }
-                // videoEle.addEventListener('loadedmetadata', async () => {
+        videoEle.value.src = URL.createObjectURL(file);
+        
+            videoEle.value.onloadeddata = async () => {
+                videoRef.value.style.display = 'block';
+                new Promise(() => {setTimeout(async () => {
                     console.log("DATA LOADED")
-                    const canvasEle = document.createElement('canvas');
-                    const context = canvasEle.getContext('2d');
+                    const context = canvasEle.value.getContext('2d');
                     
-                    console.log(videoEle.videoHeight, videoEle.videoWidth, "HEIGHT N WIDTH")
-                    canvasEle.width = videoEle.videoWidth;
-                    canvasEle.height = videoEle.videoHeight;
+                    console.log(videoEle.value.videoHeight, videoEle.value.videoWidth, "HEIGHT N WIDTH")
+                    canvasEle.value.width = videoEle.value.videoWidth;
+                    canvasEle.value.height = videoEle.value.videoHeight;
                     
-                    context.drawImage(videoEle, 0, 0, canvasEle.width, canvasEle.height);
+                    context.drawImage(videoEle.value, 0, 0, canvasEle.value.width, canvasEle.value.height);
                     
                     
-                    console.log(canvasEle.toDataURL(), "CANVAS DATA URL");
-                    
+                    console.log(canvasEle.value.toDataURL(), "CANVAS DATA URL");
                     // Convert canvas to data URL and set as poster image
-                    const posterImageReturn = await canvasEle.toDataURL();
-                    testSrc.value = posterImageReturn
+                    const dataURL = await canvasEle.value.toDataURL();
+                    const blob = await dataURLToBlob(dataURL)
+                    const posterFile = toRaw(new File([blob], `${getJustFileName(file.name)}_Poster.png`, { type: 'image/png' }));
+                    console.log("BLOB IS", posterFile)
                     // Clean up
-                    // URL.revokeObjectURL(videoEle.src)
+                    URL.revokeObjectURL(videoEle.value.src);
                     
-                    res(posterImageReturn);
+                    videoRef.value.style.display = 'none';
+                    res(posterFile)
                     
-                }, 5000));
+            }, 500);})
             }
+            
 
-        videoEle.addEventListener('error', (error) => {
+
+        videoEle.value.addEventListener('error', (error) => {
             console.log("ERROR", error)
             rej(error)
         })
+        
 
-        document.body.appendChild(videoEle);
     });
+}
+
+
+function dataURLToBlob(dataURL) {
+    return new Promise((res) => {
+
+        const parts = dataURL.split(';base64,');
+        const contentType = parts[0].split(':')[1];
+        const byteString = atob(parts[1]);
+        const arrayBuffer = new ArrayBuffer(byteString.length);
+        const uint8Array = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < byteString.length; i++) {
+            uint8Array[i] = byteString.charCodeAt(i);
+        }
+        res(new Blob([arrayBuffer], { type: contentType }));
+    })
 }
 
 
 </script>
 
 <template>
-    <div v-if="testSrc">
-        <img :src='testSrc' >
-    </div>
 
     <div v-if="files.value != []" class="file-list-container">
         <div v-for="(file, fileIndex) in files" :key="file" >
             <div class="file-container">
                 <div class="file-image">
                     <div v-if="file.type.match('video/*')">
-                        <img  :src="posterImage['video_'+fileIndex]" alt="Poster Image" style="max-width: 50px">
+                        <img  :src="getFileSrc(posterImage['video_'+getJustFileName(file.name)])" alt="Poster Image" class="previewImg">
                     </div>
                     <img v-else :src="getFileSrc(file)" alt="preview file" class="previewImg" />
                 </div>
@@ -266,6 +291,12 @@ async function generatePosterImage(e) {
             </div>
         </div>
     </div>
+
+    <div ref="videoRef" style="display: none">
+        <video ref="videoEle"></video>
+        <canvas ref="canvasEle"></canvas>
+    </div>
+    
     <div style="text-align: center;">
         <input 
             type="file" 

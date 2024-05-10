@@ -63,12 +63,12 @@
                 <span>{{ name }}</span>
                 <button @click.prevent="removeEntry(altNames, index)" style="margin-left: 6px">X</button>
             </div>
-            <div>
+            <div style="text-align: left;">
                 <textarea 
                 v-model="notes"
                 placeholder="Notes" 
                 type="text" 
-                style="width: 330px; height: 100px; padding: 5px; margin-top: 5px" >
+                style="width: 310px; height: 100px; padding: 5px; margin-top: 5px;" >
                 </textarea>
             </div>
             <!-- insert files and data -->
@@ -77,6 +77,7 @@
                     @pushFiles="getFiles($event)" 
                     @pushDemonstrators="getDemonstrators($event)"
                     @pushExistingMedia="getExistingUpdatedMedia($event)"
+                    @pushPosterImage="getPosterImage($event)"
                     ref = "fileInputElement" 
                 />
             </div>
@@ -89,7 +90,8 @@
             <p>{{ uploadStatus }}</p>
             <div v-if="uploadStatus == 'CONVERTING...' ||
                        uploadStatus == 'UPLOADING FILES'">
-                <p>{{ progress }}%</p>
+                <p>Media: {{ progress }}%</p>
+                <p v-if="posterProgress != 0">Poster: {{ posterProgress }}%</p>
                 <p>{{ fileCount }}</p>
             </div> 
             <div v-if="!(uploadStatus == 'CONVERTING...' || 
@@ -135,7 +137,9 @@ const fileInputElement = ref(null);
 var isUploadMediaSuccess = [];
 const filesToConvert = ref([])
 const demonstratorsToConvert = ref({})
+const posterImages = ref({});
 const progress = ref(storeStunt.uploadProgress)
+const posterProgress = ref(storeStunt.uploadPosterProgress)
 const fileCount = ref(storeStunt.uploadFileCount);
 storeStunt.setUploadStatus("WAITING");
 const uploadStatus = ref(storeStunt.uploadStatus)
@@ -147,12 +151,24 @@ watch(() => storeStunt.uploadProgress, (newProgress) => {
     progress.value = newProgress;
 })
 
+watch(() => storeStunt.uploadPosterProgress, (newProgress) => {
+    if(newProgress > 100) {
+        newProgress = 100
+    }
+    console.log("POSTER PROGRESS")
+    posterProgress.value = newProgress;
+})
+
 watch(() => storeStunt.uploadFileCount, (newCount) => {
     fileCount.value = newCount
 })
 
 watch(() => storeStunt.uploadStatus, (newStatus) => {
     uploadStatus.value = newStatus
+})
+
+watch(() => posterImages.value, () => {
+    console.log(posterImages.value, "POSTER IMG")
 })
 
 // variables for getting all the info into an object
@@ -176,8 +192,6 @@ let stuntId = null
 
 const existingMedia = ref(null)
 const existingMediaFolderId = ref(null)
-
-stuntId
 
 
 onMounted(() => {
@@ -322,8 +336,10 @@ const submitToDatabase = async () => {
     }
 
     storeStunt.setUploadStatus("START CONVERTING...")
+    let videoFilesMP4 = []
     let videoFiles = [];
     let photoFiles = [];
+    let videoDemonstratorsMP4 = []
     let videoDemonstrators = []
     let photoDemonstrators = []
 
@@ -333,8 +349,14 @@ const submitToDatabase = async () => {
         let currentDemonstrators = toRaw(demonstratorsToConvert.value['file_' + i]) ?? [];
         console.log("CURRENT DEMO", currentDemonstrators)
         if(file.type.match('video/*')){
-            videoFiles.push(file);
-            videoDemonstrators.push(currentDemonstrators);
+            if(file.type.match("video/mp4")) {
+                console.log("ISMP4")
+                videoFilesMP4.push(file)
+                videoDemonstratorsMP4.push(currentDemonstrators)
+            } else {
+                videoFiles.push(file);
+                videoDemonstrators.push(currentDemonstrators);
+            }
         } else {
             photoFiles.push(file);
             photoDemonstrators.push(currentDemonstrators);
@@ -353,12 +375,15 @@ const submitToDatabase = async () => {
         }
     }
 
-    let allDemonstrators = [...videoDemonstrators, ...photoDemonstrators];
+    let allDemonstrators = [...videoDemonstratorsMP4, ...videoDemonstrators, ...photoDemonstrators];
     for(let i = 0; i < allDemonstrators.length; i++){
         demonstrators.value['file_' + i] = allDemonstrators[i]
     }
-    let allFiles = [...videoFiles, ...photoFiles];
+    let allFiles = [...videoFilesMP4, ...videoFiles, ...photoFiles];
     files.value = allFiles
+
+
+
 
     storeStunt.setUploadStatus("CONVERSION COMPLETED")
 
@@ -368,26 +393,40 @@ const submitToDatabase = async () => {
     console.log(existingMedia.value, "EXITING MIEDA VALUE IS")
     var media = existingMedia.value ?? []
     var newMediaUploadNames = []
-
+    const posterLength = Object.keys(posterImages.value).length
+    var numberOfPostersUploaded = 0
     // attempt to post files to strorage
     if(files.value.length) {
         storeStunt.setUploadStatus("UPLOADING FILES")
         folderId = existingMediaFolderId.value ?? makeId(15)
         //implement later demonstrators should link to there user ID
         for (var i = 0; i < files.value.length; i++) {
-            storeStunt.setUploadFileCount((i + 1) + " of " + files.value.length)
             const file = files.value[i];
+            const posterFile = toRaw(posterImages.value["video_"+file.name.slice(0, file.name.lastIndexOf('.'))]) || null
+            if(posterFile){
+                numberOfPostersUploaded++
+            }
+            storeStunt.setUploadFileCount((i + 1 + numberOfPostersUploaded) + " of " + (files.value.length + posterLength))
+            
+            console.log("POSGER IMAGES ARE IN ADD NEW", posterFile)
 
-            await uploadNewStuntMediaToBucket(folderId , file)
+            await uploadNewStuntMediaToBucket(folderId, file, posterFile)
             .then(result => {
                 newMediaUploadNames.push(file.name)
-                const mediaInfo = {
+                console.log("UPLOAD RESULT", result)
+                if(posterFile){
+                    newMediaUploadNames.push(posterFile.name) 
+                }
+                var mediaInfo = {
                     id: makeId(10),
                     name: file.name,
                     folderId,
                     type: file.type,
-                    mediaURL: result,
+                    mediaURL: result.mediaURL,
                     demonstrators: demonstrators.value['file_' + i] || []
+                }
+                if(result.posterURL){
+                    mediaInfo['posterURL'] = result.posterURL
                 }
                 media.push(mediaInfo);
                 //TODO finish vidoes stuff
@@ -503,6 +542,7 @@ function clearInputBoxes() {
     demonstrators.value = [];
     fileInputElement.value.clearFiles()
     fileInputElement.value.clearAllDemonstrators()
+    fileInputElement.value.clearPosterImages()
     files.value = []
     
 }
@@ -533,6 +573,10 @@ function getDemonstrators(event) {
     demonstratorsToConvert.value = event;
 }
 
+function getPosterImage(event){
+    posterImages.value = event
+}
+
 </script>
 
 <style scoped lang="scss">
@@ -540,6 +584,7 @@ function getDemonstrators(event) {
     margin: 5px;
     color: var(--primary-text-color);
     height: calc(100vh - 66px);
+    width: inherit;
     overflow-y: scroll;
 }
 

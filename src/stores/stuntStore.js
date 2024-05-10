@@ -15,6 +15,7 @@ export const useStuntStore = defineStore('stunt',{
         notes: "",
         media: [],
         uploadProgress: 0,
+        uploadPosterProgress: 0,
         uploadFileCount: 0,
         uploadStatus: null,
         isUpdate: false
@@ -34,6 +35,7 @@ export const useStuntStore = defineStore('stunt',{
             this.notes = ""
             this.media = []
             this.uploadProgress = 0
+            this.uploadPosterProgress = 0
             this.uploadFileCount = 0
             this.uploadStatus = null
             this.isUpdate = false
@@ -78,6 +80,9 @@ export const useStuntStore = defineStore('stunt',{
         },
         setProgress(progress){
             this.uploadProgress = progress
+        },
+        setPosterProgress(progress){
+            this.uploadPosterProgress = progress
         },
         setUploadFileCount(count){
             this.uploadFileCount = count

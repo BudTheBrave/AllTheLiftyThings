@@ -28,7 +28,7 @@
                         <div v-for="media in stuntData.media" :key="media">
                             <div class="videoCard">
                                 <div v-if="media.type.match('video/*')">
-                                    <video controls muted>
+                                    <video controls muted :poster="media.posterURL">
                                         <source :src="media.mediaURL" type="video/mp4">     
                                         Video type not supported                    
                                     </video>
