@@ -180,11 +180,11 @@ function generatePosterImage(e) {
         console.log("FILE", file)
         consoleLog.value = "FILE IS: " + file
         videoEle.value.src = URL.createObjectURL(file);
-        consoleLog.value = "AFTER VIDEO SRC SET"
+        videoRef.value.style.display = 'block';
+        consoleLog.value = "AFTER VIDEO SRC SET: " + file + " URL IS: " + URL.createObjectURL(file)
         
         videoEle.value.onloadeddata = async () => {
             consoleLog.value = "INSIDE ONLOADEDDATA"
-            videoRef.value.style.display = 'block';
             setTimeout(async () => {
                 consoleLog.value = "INSIDE SET TIME OUT"
                 console.log("DATA LOADED")
@@ -321,6 +321,7 @@ function dataURLToBlob(dataURL) {
     <div ref="videoRef" style="display: none">
         <video ref="videoEle"></video>
         <canvas ref="canvasEle"></canvas>
+        <p>THIS SHOULD POP UP</p>
     </div>
     
     <div style="text-align: center;">
