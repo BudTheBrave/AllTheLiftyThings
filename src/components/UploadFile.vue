@@ -13,6 +13,8 @@ const existingDemonstratorsRef = ref({})
 
 const posterImage = ref({});
 
+const consoleLog = ref("WAITING FOR INPUT")
+
 
 /** index == file position
  * [
@@ -26,23 +28,32 @@ defineExpose({clearFiles, clearAllDemonstrators, clearAll, presetMedia, clearPos
 const emit = defineEmits(['pushFiles', 'pushDemonstrators', 'pushExistingMedia', 'pushPosterImage'])
 
 function addTofileArray(e) {
+    consoleLog.value = "INSIDE ADD FILE"
     if(!e.target.files){
         return;
     }
+    consoleLog.value = "After check for null files"
     Array.from(e.target.files).forEach(async (file) => {
         if(!files.value.find(e => e.name === file.name)){
             if(file.type.match('video/*')){
+                consoleLog.value = "IS A VIDEO"
                 const posterURL = await generatePosterImage(file)
+                consoleLog.value = "AFTER GENERSTE POSTER IMAGE: " + posterURL
                 console.log("E NAME", file.name, posterURL)
                 posterImage.value['video_' + getJustFileName(file.name)] = posterURL
                 console.log("AFTER SET", posterImage.value)
+                consoleLog.value = "JUST SET THE POSTER IMAGE: " + posterImage.value
 
             }
             console.log(file)
+            consoleLog.value = "PUSH FILE INTO FILES ARRAY"
             files.value.push(file);
             console.log("EMITING DATA")
+            consoleLog.value = "BEFORE EMITTING DATA"
             emitData()
+            consoleLog.value = "AFTER EMITTING DATA"
         } else {
+            consoleLog.value = "FILE ALREADY SUBMITTED"
             console.log("file already submitted")
         }        
     })
@@ -60,6 +71,7 @@ function removeEntry(array, index) {
 }
 
 function getFileSrc(file) {
+    consoleLog.value = "GETTING FILE SRC"
     return URL.createObjectURL(file);
 }
 
@@ -159,45 +171,56 @@ const videoRef = ref(null)
 const videoEle = ref(null)
 const canvasEle = ref(null)
 
-async function generatePosterImage(e) {
+function generatePosterImage(e) {
     console.log("CALLED IN FILE THINGY", e)
-    return await new Promise((res, rej) => {
+    consoleLog.value = "INSIDE GEN POSTER IMG"
+    return new Promise((res, rej) => {
+        consoleLog.value = "IN PROMISE IN GEN POSTER IMG"
         const file = e;
         console.log("FILE", file)
+        consoleLog.value = "FILE IS: " + file
         videoEle.value.src = URL.createObjectURL(file);
+        consoleLog.value = "AFTER VIDEO SRC SET"
         
-            videoEle.value.onloadeddata = async () => {
-                videoRef.value.style.display = 'block';
-                new Promise(() => {setTimeout(async () => {
-                    console.log("DATA LOADED")
-                    const context = canvasEle.value.getContext('2d');
-                    
-                    console.log(videoEle.value.videoHeight, videoEle.value.videoWidth, "HEIGHT N WIDTH")
-                    canvasEle.value.width = videoEle.value.videoWidth;
-                    canvasEle.value.height = videoEle.value.videoHeight;
-                    
-                    context.drawImage(videoEle.value, 0, 0, canvasEle.value.width, canvasEle.value.height);
-                    
-                    
-                    console.log(canvasEle.value.toDataURL(), "CANVAS DATA URL");
-                    // Convert canvas to data URL and set as poster image
-                    const dataURL = await canvasEle.value.toDataURL();
-                    const blob = await dataURLToBlob(dataURL)
-                    const posterFile = toRaw(new File([blob], `${getJustFileName(file.name)}_Poster.png`, { type: 'image/png' }));
-                    console.log("BLOB IS", posterFile)
-                    // Clean up
-                    URL.revokeObjectURL(videoEle.value.src);
-                    
-                    videoRef.value.style.display = 'none';
-                    res(posterFile)
-                    
-            }, 500);})
-            }
+        videoEle.value.onloadeddata = async () => {
+            consoleLog.value = "INSIDE ONLOADEDDATA"
+            videoRef.value.style.display = 'block';
+            setTimeout(async () => {
+                consoleLog.value = "INSIDE SET TIME OUT"
+                console.log("DATA LOADED")
+                const context = canvasEle.value.getContext('2d');
+                
+                console.log(videoEle.value.videoHeight, videoEle.value.videoWidth, "HEIGHT N WIDTH")
+                canvasEle.value.width = videoEle.value.videoWidth;
+                canvasEle.value.height = videoEle.value.videoHeight;
+                
+                context.drawImage(videoEle.value, 0, 0, canvasEle.value.width, canvasEle.value.height);
+                
+                
+                console.log(canvasEle.value.toDataURL(), "CANVAS DATA URL");
+                // Convert canvas to data URL and set as poster image
+                consoleLog.value = "BEFORE CANVAS TO DATA"
+                const dataURL = await canvasEle.value.toDataURL();
+                consoleLog.value = "BEFORE BLOB"
+                const blob = await dataURLToBlob(dataURL)
+                consoleLog.value = "BEFORE MAKE FILE"
+                const posterFile = await toRaw(new File([blob], `${getJustFileName(file.name)}_Poster.png`, { type: 'image/png' }));
+                console.log("BLOB IS", posterFile)
+                consoleLog.value = "FILE AFTER BLOB IS: " + posterFile
+                // Clean up
+                URL.revokeObjectURL(videoEle.value.src);
+                
+                videoRef.value.style.display = 'none';
+                res(posterFile)
+                
+            }, 500);
+        }
             
 
 
         videoEle.value.addEventListener('error', (error) => {
             console.log("ERROR", error)
+            consoleLog.value = "ERROR: " + error
             rej(error)
         })
         
@@ -207,6 +230,7 @@ async function generatePosterImage(e) {
 
 
 function dataURLToBlob(dataURL) {
+    consoleLog.value = "INSODE DATA URL TO BLOB"
     return new Promise((res) => {
 
         const parts = dataURL.split(';base64,');
@@ -217,6 +241,7 @@ function dataURLToBlob(dataURL) {
         for (let i = 0; i < byteString.length; i++) {
             uint8Array[i] = byteString.charCodeAt(i);
         }
+        consoleLog.value = "EXITING DATA URL TO BLOB"
         res(new Blob([arrayBuffer], { type: contentType }));
     })
 }
@@ -225,6 +250,7 @@ function dataURLToBlob(dataURL) {
 </script>
 
 <template>
+    {{ consoleLog }}
 
     <div v-if="files.value != []" class="file-list-container">
         <div v-for="(file, fileIndex) in files" :key="file" >
@@ -301,7 +327,7 @@ function dataURLToBlob(dataURL) {
         <input 
             type="file" 
             name="fileUpload" 
-            @change="addTofileArray" 
+            @change.prevent="addTofileArray" 
             accept=""
             multiple/>
     </div> 
