@@ -318,8 +318,8 @@ function dataURLToBlob(dataURL) {
         </div>
     </div>
 
-    <div ref="videoRef" style="display: none">
-        <video ref="videoEle" muted></video>
+    <div ref="videoRef" style="display: none; background-color: yellow">
+        <video ref="videoEle" preload="metadata" muted></video>
         <canvas ref="canvasEle"></canvas>
         <p>THIS SHOULD POP UP</p>
     </div>
