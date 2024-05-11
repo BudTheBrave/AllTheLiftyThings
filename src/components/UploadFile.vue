@@ -319,7 +319,7 @@ function dataURLToBlob(dataURL) {
     </div>
 
     <div ref="videoRef" style="display: none">
-        <video ref="videoEle"></video>
+        <video ref="videoEle" muted></video>
         <canvas ref="canvasEle"></canvas>
         <p>THIS SHOULD POP UP</p>
     </div>
