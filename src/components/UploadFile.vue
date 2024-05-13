@@ -183,8 +183,10 @@ function generatePosterImage(e) {
         videoRef.value.style.display = 'block';
         consoleLog.value = "AFTER VIDEO SRC SET: " + file + " URL IS: " + URL.createObjectURL(file)
         
-        videoEle.value.onloadeddata = async () => {
+        videoEle.value.onloadeddata = () => {
+            videoEle.value.pause()
             consoleLog.value = "INSIDE ONLOADEDDATA"
+            console.log("HERE")
             setTimeout(async () => {
                 consoleLog.value = "INSIDE SET TIME OUT"
                 console.log("DATA LOADED")
@@ -319,7 +321,16 @@ function dataURLToBlob(dataURL) {
     </div>
 
     <div ref="videoRef" style="display: none; background-color: yellow">
-        <video ref="videoEle" preload="metadata" muted></video>
+        <video ref="videoEle" 
+                preload="metadata"
+                muted
+                crossorigin="anonymous" 
+                controls
+                style="max-width: 200px; max-height: 200px;"
+                playsinline
+                autoplay>
+            no support
+        </video>
         <canvas ref="canvasEle"></canvas>
         <p>THIS SHOULD POP UP</p>
     </div>
