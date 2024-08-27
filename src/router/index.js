@@ -141,9 +141,9 @@ import { getCurrentUser } from "@/firebase";
 import { useUserStore } from "@/stores/userStore";
 
 router.beforeEach(async (to) => {
+    const user = await getCurrentUser()
     const userStore = useUserStore()
     const userData = userStore.userData
-    const user = await getCurrentUser()
     if(to.meta.requiresAdmin && !userData.admin) {
         return{
             path: "/",
